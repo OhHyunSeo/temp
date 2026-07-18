@@ -158,7 +158,7 @@
         const SUPABASE_KEY = 'sb_publishable_f3AjW6dtCKw2Ofrdu9M2Ng_CMvFqatD';
 
         // Supabase 클라이언트 초기화
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let schedules = [];
 
@@ -186,7 +186,7 @@
         // Supabase에서 데이터를 불러오는 함수
         async function fetchSchedules() {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('travel_schedules')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -224,7 +224,7 @@
 
             try {
                 // Supabase에 데이터 삽입
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('travel_schedules')
                     .insert([
                         { name: name, start_date: startDate, end_date: endDate }
