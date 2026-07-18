@@ -21,3 +21,9 @@ CREATE POLICY "Enable insert for all users"
 ON travel_schedules 
 FOR INSERT 
 WITH CHECK (true);
+
+-- 5. 누구나 데이터를 수정할 수 있도록 정책 설정
+CREATE POLICY "Enable update for all users" 
+ON travel_schedules 
+FOR UPDATE 
+USING (true);
