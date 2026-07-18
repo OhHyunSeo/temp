@@ -27,3 +27,9 @@ CREATE POLICY "Enable update for all users"
 ON travel_schedules 
 FOR UPDATE 
 USING (true);
+
+-- 6. 누구나 데이터를 삭제할 수 있도록 정책 설정
+CREATE POLICY "Enable delete for all users" 
+ON travel_schedules 
+FOR DELETE 
+USING (true);

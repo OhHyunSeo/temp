@@ -120,9 +120,26 @@
             font-size: 0.8em;
             width: auto;
             border: 1px solid #555;
+            cursor: pointer;
+            color: white;
+            border-radius: 4px;
         }
         .edit-btn:hover {
             background-color: #444;
+        }
+        .delete-btn {
+            background-color: #7a1c1c;
+            padding: 6px 12px;
+            font-size: 0.8em;
+            width: auto;
+            border: 1px solid #555;
+            cursor: pointer;
+            color: white;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .delete-btn:hover {
+            background-color: #9c2727;
         }
         .loading {
             text-align: center;
@@ -279,7 +296,10 @@
                         <div class="result-name">${schedule.name}</div>
                         <div class="result-dates">🗓️ ${schedule.start_date} ~ ${schedule.end_date}</div>
                     </div>
-                    <button class="edit-btn" onclick="startEdit(${schedule.id})">수정</button>
+                    <div>
+                        <button class="edit-btn" onclick="startEdit(${schedule.id})">수정</button>
+                        <button class="delete-btn" onclick="deleteSchedule(${schedule.id})">삭제</button>
+                    </div>
                 `;
                 listElement.appendChild(li);
             });
@@ -413,6 +433,28 @@
             
             document.getElementById('submitBtn').innerText = '일정 등록하기';
             document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // 일정 삭제 함수
+        async function deleteSchedule(id) {
+            if (!confirm('정말로 이 일정을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('travel_schedules')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                
+                // 데이터 재조회 및 렌더링
+                await fetchSchedules();
+            } catch (error) {
+                console.error('Error deleting data:', error.message);
+                alert('일정 삭제에 실패했습니다. 관리자에게 문의하세요.');
+            }
         }
 
         // 새 일정을 등록하거나 기존 일정을 수정하는 함수
