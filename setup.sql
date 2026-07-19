@@ -33,3 +33,10 @@ CREATE POLICY "Enable delete for all users"
 ON travel_schedules 
 FOR DELETE 
 USING (true);
+
+-- 7. 날짜 컬럼을 필수가 아니도록 변경 (미정/불참 상태 지원)
+ALTER TABLE travel_schedules ALTER COLUMN start_date DROP NOT NULL;
+ALTER TABLE travel_schedules ALTER COLUMN end_date DROP NOT NULL;
+
+-- 8. 참석 상태 컬럼 추가
+ALTER TABLE travel_schedules ADD COLUMN IF NOT EXISTS status TEXT DEFAULT '참석';

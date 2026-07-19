@@ -7,10 +7,13 @@
     <!-- Supabase JS 라이브러리 추가 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        * {
+            box-sizing: border-box; /* 모바일 그리드 오버플로우 방지 */
+        }
         body {
             /* 배경 이미지 설정 */
             background-color: #121212;
-            background-image: url('./bg.jpg'); /* 같은 폴더에 있는 bg.jpg 파일을 배경으로 사용 */
+            background-image: url('./bg.jpg'); 
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -47,17 +50,28 @@
             font-size: 0.9em;
             color: #a0a0a0;
         }
-        input {
+        .status-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .status-options label {
+            display: inline;
+            margin: 0;
+            cursor: pointer;
+            color: #e0e0e0;
+        }
+        input[type="text"], input[type="date"] {
             width: 100%;
             padding: 12px;
             background-color: #2c2c2c;
             color: #ffffff;
             border: 1px solid #333;
             border-radius: 6px;
-            box-sizing: border-box;
             color-scheme: dark;
         }
-        input:focus {
+        input[type="text"]:focus, input[type="date"]:focus {
             outline: none;
             border-color: #008080;
         }
@@ -79,6 +93,11 @@
         }
         button:hover {
             background-color: #006666;
+        }
+        button:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
         }
         .btn-group {
             display: flex;
@@ -121,11 +140,26 @@
             color: #008080;
             margin-bottom: 5px;
         }
+        .status-badge {
+            font-size: 0.8em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+            background-color: #333;
+            color: #ccc;
+        }
+        .status-badge.미정 {
+            background-color: #5a4b12;
+            color: #ffd43b;
+        }
+        .status-badge.불참 {
+            background-color: #5a1212;
+            color: #ff6b6b;
+        }
         .result-dates {
             font-size: 0.9em;
         }
-        .edit-btn {
-            background-color: #333;
+        .edit-btn, .delete-btn {
             padding: 6px 12px;
             font-size: 0.8em;
             width: auto;
@@ -134,23 +168,10 @@
             color: white;
             border-radius: 4px;
         }
-        .edit-btn:hover {
-            background-color: #444;
-        }
-        .delete-btn {
-            background-color: #7a1c1c;
-            padding: 6px 12px;
-            font-size: 0.8em;
-            width: auto;
-            border: 1px solid #555;
-            cursor: pointer;
-            color: white;
-            border-radius: 4px;
-            margin-left: 5px;
-        }
-        .delete-btn:hover {
-            background-color: #9c2727;
-        }
+        .edit-btn { background-color: #333; }
+        .edit-btn:hover { background-color: #444; }
+        .delete-btn { background-color: #7a1c1c; margin-left: 5px; }
+        .delete-btn:hover { background-color: #9c2727; }
         .loading {
             text-align: center;
             color: #a0a0a0;
@@ -192,8 +213,8 @@
             font-weight: bold;
             padding-bottom: 5px;
         }
-        .calendar-day-header:first-child { color: #ff6b6b; } /* 일요일 */
-        .calendar-day-header:last-child { color: #4dabf7; } /* 토요일 */
+        .calendar-day-header:first-child { color: #ff6b6b; } 
+        .calendar-day-header:last-child { color: #4dabf7; } 
         
         .calendar-cell {
             background-color: #1e1e1e;
@@ -203,6 +224,7 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            min-width: 0; /* 중요: 그리드 셀이 내용물 때문에 넓어지는 것 방지 */
         }
         .calendar-date {
             font-size: 0.8em;
@@ -223,6 +245,39 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
+        /* 모바일 반응형 처리 */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 20px;
+            }
+            .calendar-container {
+                padding: 10px;
+            }
+            .calendar-cell {
+                padding: 2px;
+                min-height: 60px;
+            }
+            .calendar-date {
+                font-size: 0.7em;
+            }
+            .calendar-day-header {
+                font-size: 0.75em;
+            }
+            .schedule-bar {
+                font-size: 0.65em;
+                padding: 1px 3px;
+            }
+            .status-options {
+                font-size: 0.9em;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -235,7 +290,22 @@
             <input type="text" id="userName" placeholder="이름을 입력하세요 (예: 오현서)">
         </div>
 
-        <div class="form-group date-range">
+        <div class="form-group">
+            <label>참석 상태</label>
+            <div class="status-options">
+                <label>
+                    <input type="radio" name="status" value="참석" checked onchange="toggleDateInputs()"> 참석 (날짜 입력)
+                </label>
+                <label>
+                    <input type="radio" name="status" value="미정" onchange="toggleDateInputs()"> 미정
+                </label>
+                <label>
+                    <input type="radio" name="status" value="불참" onchange="toggleDateInputs()"> 불참
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group date-range" id="dateInputGroup">
             <div style="flex: 1;">
                 <label for="startDate">시작 가능일</label>
                 <input type="date" id="startDate">
@@ -289,6 +359,19 @@
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth(); // 0 ~ 11
 
+        // 상태 선택에 따른 날짜 입력란 토글
+        function toggleDateInputs() {
+            const status = document.querySelector('input[name="status"]:checked').value;
+            const dateGroup = document.getElementById('dateInputGroup');
+            if (status === '참석') {
+                dateGroup.style.display = 'flex';
+            } else {
+                dateGroup.style.display = 'none';
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+            }
+        }
+
         // 화면에 목록을 그려주는 함수
         function renderList() {
             const listElement = document.getElementById('resultList');
@@ -302,10 +385,20 @@
             schedules.forEach(schedule => {
                 const li = document.createElement('li');
                 li.className = 'result-item';
+                
+                const dbStatus = schedule.status || '참석';
+                let dateHtml = '';
+                if (dbStatus === '참석' && schedule.start_date && schedule.end_date) {
+                    dateHtml = `<div class="result-dates">🗓️ ${schedule.start_date} ~ ${schedule.end_date}</div>`;
+                }
+                
+                let badgeClass = dbStatus === '참석' ? '' : `status-badge ${dbStatus}`;
+                let badgeHtml = dbStatus === '참석' ? '' : `<span class="${badgeClass}">${dbStatus}</span>`;
+
                 li.innerHTML = `
                     <div class="result-info">
-                        <div class="result-name">${schedule.name}</div>
-                        <div class="result-dates">🗓️ ${schedule.start_date} ~ ${schedule.end_date}</div>
+                        <div class="result-name">${schedule.name} ${badgeHtml}</div>
+                        ${dateHtml}
                     </div>
                     <div>
                         <button class="edit-btn" onclick="startEdit(${schedule.id})">수정</button>
@@ -336,19 +429,14 @@
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
 
-            // 이전 달 날짜 채우기
             for (let i = firstDay - 1; i >= 0; i--) {
                 const cell = createCalendarCell(prevMonthDays - i, true, new Date(currentYear, currentMonth - 1, prevMonthDays - i));
                 grid.appendChild(cell);
             }
-
-            // 현재 달 날짜 채우기
             for (let i = 1; i <= daysInMonth; i++) {
                 const cell = createCalendarCell(i, false, new Date(currentYear, currentMonth, i));
                 grid.appendChild(cell);
             }
-
-            // 다음 달 날짜 채우기 (42칸 맞추기)
             const totalCells = firstDay + daysInMonth;
             const nextDays = 42 - totalCells;
             for (let i = 1; i <= nextDays; i++) {
@@ -367,18 +455,18 @@
             dateStrDiv.innerText = dateNum;
             cell.appendChild(dateStrDiv);
 
-            // UTC 문제 방지를 위해 로컬 시간 기준으로 yyyy-mm-dd 생성
             const year = cellDate.getFullYear();
             const month = String(cellDate.getMonth() + 1).padStart(2, '0');
             const day = String(cellDate.getDate()).padStart(2, '0');
             const cellDateString = `${year}-${month}-${day}`;
 
-            // 이 날짜가 포함된 일정 찾기
-            schedules.forEach((schedule, index) => {
+            // '참석' 상태이면서 날짜가 유효한 사람만 달력에 표시
+            const attendingSchedules = schedules.filter(s => (!s.status || s.status === '참석') && s.start_date && s.end_date);
+            
+            attendingSchedules.forEach((schedule, index) => {
                 if (cellDateString >= schedule.start_date && cellDateString <= schedule.end_date) {
                     const bar = document.createElement('div');
                     bar.className = 'schedule-bar';
-                    // 시각적 구분을 위해 색상 약간씩 다르게
                     const hue = (index * 137.5) % 360; 
                     bar.style.backgroundColor = `hsl(${hue}, 70%, 40%)`;
                     bar.innerText = schedule.name;
@@ -404,13 +492,16 @@
         // 가장 많이 겹치는 일정을 계산하여 렌더링하는 함수
         function renderBestDates() {
             const container = document.getElementById('bestDateContainer');
-            if (schedules.length === 0) {
+            // '참석' 상태인 사람만 대상으로 계산
+            const attendingSchedules = schedules.filter(s => (!s.status || s.status === '참석') && s.start_date && s.end_date);
+            
+            if (attendingSchedules.length === 0) {
                 container.innerHTML = '';
                 return;
             }
             
             const dateCounts = {};
-            schedules.forEach(schedule => {
+            attendingSchedules.forEach(schedule => {
                 let current = new Date(schedule.start_date);
                 const end = new Date(schedule.end_date);
                 
@@ -426,7 +517,6 @@
                 if (count > maxCount) maxCount = count;
             }
             
-            // 2명 이상 겹칠 때만 보여줌
             if (maxCount < 2) {
                 container.innerHTML = '';
                 return; 
@@ -496,8 +586,15 @@
 
             editingId = id;
             document.getElementById('userName').value = schedule.name;
-            document.getElementById('startDate').value = schedule.start_date;
-            document.getElementById('endDate').value = schedule.end_date;
+            
+            const status = schedule.status || '참석';
+            document.querySelector(`input[name="status"][value="${status}"]`).checked = true;
+            toggleDateInputs();
+            
+            if (status === '참석') {
+                document.getElementById('startDate').value = schedule.start_date || '';
+                document.getElementById('endDate').value = schedule.end_date || '';
+            }
 
             document.getElementById('submitBtn').innerText = '일정 수정하기';
             document.getElementById('cancelBtn').style.display = 'block';
@@ -508,6 +605,8 @@
         function cancelEdit() {
             editingId = null;
             document.getElementById('userName').value = '';
+            document.querySelector(`input[name="status"][value="참석"]`).checked = true;
+            toggleDateInputs();
             document.getElementById('startDate').value = '';
             document.getElementById('endDate').value = '';
             
@@ -529,7 +628,6 @@
 
                 if (error) throw error;
                 
-                // 데이터 재조회 및 렌더링
                 await fetchSchedules();
             } catch (error) {
                 console.error('Error deleting data:', error.message);
@@ -540,53 +638,62 @@
         // 새 일정을 등록하거나 기존 일정을 수정하는 함수
         async function submitDate() {
             const name = document.getElementById('userName').value;
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+            const status = document.querySelector('input[name="status"]:checked').value;
+            let startDate = document.getElementById('startDate').value;
+            let endDate = document.getElementById('endDate').value;
             const submitBtn = document.getElementById('submitBtn');
 
-            if (!name || !startDate || !endDate) {
-                alert('이름과 날짜를 모두 입력해주세요.');
+            if (!name) {
+                alert('이름을 입력해주세요.');
                 return;
             }
             
-            if (startDate > endDate) {
-                alert('종료일이 시작일보다 빠를 수 없습니다.');
-                return;
+            if (status === '참석') {
+                if (!startDate || !endDate) {
+                    alert('참석일 경우 시작일과 종료일을 모두 선택해야 합니다.');
+                    return;
+                }
+                if (startDate > endDate) {
+                    alert('종료일이 시작일보다 빠를 수 없습니다.');
+                    return;
+                }
+            } else {
+                startDate = null;
+                endDate = null;
             }
 
-            // 버튼 비활성화 (중복 클릭 방지)
             submitBtn.disabled = true;
             submitBtn.innerText = editingId ? '수정 중...' : '등록 중...';
 
+            const payload = { 
+                name: name, 
+                status: status,
+                start_date: startDate, 
+                end_date: endDate 
+            };
+
             try {
                 if (editingId) {
-                    // 기존 데이터 수정 (UPDATE)
                     const { error } = await supabaseClient
                         .from('travel_schedules')
-                        .update({ name: name, start_date: startDate, end_date: endDate })
+                        .update(payload)
                         .eq('id', editingId);
 
                     if (error) throw error;
                 } else {
-                    // 새 데이터 삽입 (INSERT)
                     const { error } = await supabaseClient
                         .from('travel_schedules')
-                        .insert([
-                            { name: name, start_date: startDate, end_date: endDate }
-                        ]);
+                        .insert([payload]);
 
                     if (error) throw error;
                 }
 
-                // 성공적으로 반영되면 입력창 초기화 및 모드 해제
                 cancelEdit();
-                // 데이터 재조회 및 렌더링
                 await fetchSchedules();
             } catch (error) {
                 console.error('Error saving data:', error.message);
                 alert('일정 저장에 실패했습니다. 관리자에게 문의하세요.');
             } finally {
-                // 버튼 활성화
                 submitBtn.disabled = false;
                 if (!editingId) {
                     submitBtn.innerText = '일정 등록하기';
